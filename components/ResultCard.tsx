@@ -1,8 +1,51 @@
-import { DocumentMagnifyingGlassIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { useState } from "react";
+import { DocumentMagnifyingGlassIcon, CheckCircleIcon, ExclamationTriangleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ReportPDF } from "./ReportPDF";
+import { pdf } from "@react-pdf/renderer";
 
 export default function ResultCard({ result }: { result: string }) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const confidence = "98.4%";
+
   const isHealthy = result.toLowerCase().includes("normal") || result.toLowerCase().includes("healthy");
   const isDanger = result.toLowerCase().includes("malignant") || result.toLowerCase().includes("leukemia") || result.toLowerCase().includes("abnormal");
+
+  const generateReport = async () => {
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ diagnosis: result, confidence }),
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch report from AI");
+
+      const data = await res.json();
+      const reportContent = data.report;
+
+      // Generate PDF Blob using @react-pdf/renderer programmatically
+      const blob = await pdf(<ReportPDF reportContent={reportContent} />).toBlob();
+      
+      // Auto-download logic
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Clinical_Diagnostic_Report.pdf';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error("Error generating report", error);
+      alert("Failed to generate the report. Please check API configurations.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="mt-10 overflow-hidden transform transition-all duration-300">
@@ -32,8 +75,21 @@ export default function ResultCard({ result }: { result: string }) {
         </div>
 
         <div className="bg-gray-50 dark:bg-gray-900 overflow-hidden p-5 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center px-8 relative">
-          <span>Confidence Score: <b>98.4%</b></span>
-          <button className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">View Detailed Report →</button>
+          <span>Confidence Score: <b>{confidence}</b></span>
+          <button 
+            onClick={generateReport}
+            disabled={isGenerating}
+            className="font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 disabled:opacity-50 flex items-center gap-1 transition-opacity"
+          >
+            {isGenerating ? (
+              <>
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                Validating Report...
+              </>
+            ) : (
+              "View Detailed Report →"
+            )}
+          </button>
         </div>
       </div>
     </div>

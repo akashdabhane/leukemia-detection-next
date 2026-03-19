@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { UserCircleIcon, BeakerIcon } from "@heroicons/react/24/outline";
 import { ThemeToggle } from "./ThemeToggle";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar() {
+  const { data: session } = useSession();
+
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/70 dark:bg-gray-900/80 border-b border-gray-100/50 dark:border-gray-800 shadow-sm">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -36,9 +41,25 @@ export default function Navbar() {
             <span>Gemini Insights</span>
             <span className="flex h-2 w-2 rounded-full bg-indigo-500 dark:bg-indigo-400"></span>
           </button>
-          <button className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-            <UserCircleIcon className="w-8 h-8" />
-          </button>
+          
+          {session ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden md:inline-block">
+                {session.user?.name}
+              </span>
+              <button
+                onClick={() => signOut()}
+                className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+              <UserCircleIcon className="w-8 h-8" />
+              <span className="hidden md:block">Login</span>
+            </Link>
+          )}
         </div>
       </div>
     </nav>
