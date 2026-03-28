@@ -25,6 +25,7 @@ export default function Navbar() {
           <Link href="/about" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">About</Link>
           <Link href="/precautions" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Precautions</Link>
           <Link href="/treatment" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Treatment</Link>
+          <Link href="/prescription" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Prescription</Link>
           <Link href="/help" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Help</Link>
           <Link href="/chat" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1">
             <span className="relative flex h-2 w-2">
