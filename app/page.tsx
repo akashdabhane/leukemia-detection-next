@@ -47,7 +47,7 @@ export default function Home() {
     <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10">
       
       {/* Left panel - Intro */}
-      <div className="lg:col-span-5 flex flex-col justify-start pt-12">
+      <div className="lg:col-span-5 flex flex-col justify-start pt-2">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-semibold mb-6 shadow-sm border border-indigo-100/50 dark:border-indigo-800/50 w-max">
           <CpuChipIcon className="w-4 h-4" />
           Neural Engine Active

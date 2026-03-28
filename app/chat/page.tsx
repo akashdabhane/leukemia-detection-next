@@ -10,6 +10,14 @@ type Message = {
   content: string;
 };
 
+type ConversationSummary = {
+  _id: string;
+  title: string;
+  provider: "ollama" | "openai" | "gemini";
+  createdAt: string;
+  updatedAt: string;
+};
+
 export default function ChatPage() {
   const { status } = useSession();
   const router = useRouter();
@@ -39,6 +47,9 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isStreamingEnabled, setIsStreamingEnabled] = useState(false);
   const [provider, setProvider] = useState<"ollama" | "openai" | "gemini">("ollama");
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [conversationsLoading, setConversationsLoading] = useState(false);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -48,6 +59,53 @@ export default function ChatPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load conversation list on mount
+  useEffect(() => {
+    const loadConversations = async () => {
+      try {
+        setConversationsLoading(true);
+        const res = await fetch("/api/conversations");
+        if (!res.ok) return;
+        const data = await res.json();
+        setConversations(data.conversations || []);
+      } catch (e) {
+        console.error("Failed to load conversations", e);
+      } finally {
+        setConversationsLoading(false);
+      }
+    };
+
+    loadConversations();
+  }, []);
+
+  const handleSelectConversation = async (id: string) => {
+    if (id === selectedConversationId) return;
+    try {
+      setIsLoading(true);
+      const res = await fetch(`/api/conversations/${id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const convMessages: Message[] = data.conversation?.messages || [];
+      setMessages(
+        convMessages.length
+          ? convMessages
+          : [{ role: "bot", content: "Hello! I am your AI assistant. How can I help you today?" }]
+      );
+      setSelectedConversationId(id);
+    } catch (e) {
+      console.error("Failed to load conversation", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewChat = () => {
+    setSelectedConversationId(null);
+    setMessages([
+      { role: "bot", content: "Hello! I am your AI assistant. How can I help you today?" },
+    ]);
+  };
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,9 +170,73 @@ export default function ChatPage() {
             }
           }
         }
+
+        // After streaming completes, persist conversation
+        try {
+          await fetch("/api/conversations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              conversationId: selectedConversationId,
+              provider,
+              userMessage: userMsg,
+              botMessage: currentBotMessage,
+            }),
+          }).then(async (convRes) => {
+            if (!convRes.ok) return;
+            const convData = await convRes.json();
+            if (convData.conversation) {
+              const conv: ConversationSummary = convData.conversation;
+              setSelectedConversationId(conv._id);
+              setConversations((prev) => {
+                const existingIndex = prev.findIndex((c) => c._id === conv._id);
+                if (existingIndex !== -1) {
+                  const updated = [...prev];
+                  updated[existingIndex] = conv;
+                  return updated.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+                }
+                return [conv, ...prev];
+              });
+            }
+          });
+        } catch (e) {
+          console.error("Failed to save streamed conversation", e);
+        }
       } else {
         const data = await res.json();
         setMessages((prev) => [...prev, { role: "bot", content: data.reply }]);
+
+        // Persist conversation (non-streaming)
+        try {
+          await fetch("/api/conversations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              conversationId: selectedConversationId,
+              provider,
+              userMessage: userMsg,
+              botMessage: data.reply,
+            }),
+          }).then(async (convRes) => {
+            if (!convRes.ok) return;
+            const convData = await convRes.json();
+            if (convData.conversation) {
+              const conv: ConversationSummary = convData.conversation;
+              setSelectedConversationId(conv._id);
+              setConversations((prev) => {
+                const existingIndex = prev.findIndex((c) => c._id === conv._id);
+                if (existingIndex !== -1) {
+                  const updated = [...prev];
+                  updated[existingIndex] = conv;
+                  return updated.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+                }
+                return [conv, ...prev];
+              });
+            }
+          });
+        } catch (e) {
+          console.error("Failed to save conversation", e);
+        }
         setIsLoading(false);
       }
     } catch {
@@ -127,7 +249,46 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-[80vh] flex flex-col bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg rounded-2xl shadow-xl dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden">
+    <div className="max-w-6xl mx-auto h-[80vh] flex gap-4">
+      {/* Sidebar - Conversation history */}
+      <aside className="w-64 hidden md:flex flex-col bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg rounded-2xl shadow-xl dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white/70 dark:bg-gray-950/70">
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Conversations</h2>
+          <button
+            onClick={handleNewChat}
+            className="text-xs px-2 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+          >
+            New
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 space-y-1 text-sm">
+          {conversationsLoading && (
+            <p className="text-xs text-gray-500 px-2 py-1">Loading...</p>
+          )}
+          {conversations.length === 0 && !conversationsLoading && (
+            <p className="text-xs text-gray-500 px-2 py-1">No conversations yet.</p>
+          )}
+          {conversations.map((conv) => (
+            <button
+              key={conv._id}
+              onClick={() => handleSelectConversation(conv._id)}
+              className={`w-full text-left px-3 py-2 rounded-lg border text-xs transition-colors truncate ${
+                conv._id === selectedConversationId
+                  ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-200"
+                  : "bg-white/70 dark:bg-gray-900/60 border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+              }`}
+            >
+              <span className="block truncate">{conv.title}</span>
+              <span className="mt-1 block text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                {conv.provider}
+              </span>
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      {/* Main chat panel */}
+      <div className="flex-1 flex flex-col bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg rounded-2xl shadow-xl dark:shadow-none border border-gray-100 dark:border-gray-800 overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-white/50 dark:bg-gray-950/50 backdrop-blur-sm flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4">
         <div>
@@ -244,6 +405,7 @@ export default function ChatPage() {
             <PaperAirplaneIcon className="w-5 h-5" />
           </button>
         </form>
+      </div>
       </div>
     </div>
   );
