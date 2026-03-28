@@ -28,18 +28,6 @@ export default function ChatPage() {
     }
   }, [status, router]);
 
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-600 dark:text-gray-300 text-sm">Checking authentication...</p>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    return null; // Redirect in progress
-  }
-
   const [messages, setMessages] = useState<Message[]>([
     { role: "bot", content: "Hello! I am your AI assistant. How can I help you today?" }
   ]);
@@ -53,7 +41,9 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Use "nearest" so the viewport doesn't jump to the extreme bottom
+    // but still keeps the latest message in view.
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
   useEffect(() => {
@@ -247,6 +237,19 @@ export default function ChatPage() {
       setIsLoading(false);
     }
   };
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-gray-600 dark:text-gray-300 text-sm">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    // Redirect effect is already in progress; just show nothing here.
+    return null;
+  }
 
   return (
     <div className="max-w-6xl mx-auto h-[80vh] flex gap-4">

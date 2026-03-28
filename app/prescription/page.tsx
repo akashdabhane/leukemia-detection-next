@@ -15,18 +15,6 @@ export default function PrescriptionSuggestionPage() {
     }
   }, [status, router]);
 
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-gray-600 dark:text-gray-300 text-sm">Checking authentication...</p>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    return null; // Redirect in progress
-  }
-
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     patient: {
@@ -53,6 +41,19 @@ export default function PrescriptionSuggestionPage() {
 
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-gray-600 dark:text-gray-300 text-sm">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    // Redirect effect is already in progress; just show nothing here.
+    return null;
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
