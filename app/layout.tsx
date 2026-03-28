@@ -5,8 +5,8 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import AuthProvider from "@/components/providers/AuthProvider";
 
 export const metadata = {
-  title: "Leukemia Detector AI",
-  description: "Advanced computational diagnostic platform for cellular anomaly detection.",
+  title: "Leukemia Detector AI & Medical Assistant",
+  description: "Advanced computational diagnostic platform for cellular anomaly detection. Utilizing cutting-edge AI to analyze blood smear images, providing accurate leukemia detection and personalized medical insights. Empowering healthcare professionals with rapid, reliable diagnostics for improved patient outcomes.",
 };
 
 export default function RootLayout({

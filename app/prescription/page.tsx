@@ -175,7 +175,7 @@ export default function PrescriptionSuggestionPage() {
 
       {/* Main prescription form */}
       <div className="flex-1">
-        <div className="max-w-4xl mx-auto w-full py-12">
+        <div className="max-w-4xl mx-auto w-full py-3">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600 mb-4 h-12">
               AI Prescription Suggestion
