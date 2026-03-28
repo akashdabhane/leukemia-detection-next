@@ -1,7 +1,20 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../auth/[...nextauth]/route";
+import connectToDatabase from "@/lib/mongodb";
+import Prescription from "@/models/Prescription";
 
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !(session.user as any).id) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const data = await req.json();
     const apiKey = process.env.GEMINI_API_KEY || "";
     
@@ -66,6 +79,19 @@ Provide your response STRICTLY as a JSON object with the following structure:
     
     // Parse the JSON response
     const parsedResponse = JSON.parse(replyText);
+
+    // Persist prescription history
+    try {
+      await connectToDatabase();
+      await Prescription.create({
+        userId: (session.user as any).id,
+        input: data,
+        result: parsedResponse,
+      });
+    } catch (dbErr) {
+      console.error("Failed to save prescription history", dbErr);
+      // Do not fail the response to the user if history saving fails.
+    }
 
     return NextResponse.json({ success: true, data: parsedResponse });
   } catch (error: any) {
