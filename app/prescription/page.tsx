@@ -1,9 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { DocumentTextIcon, BeakerIcon, ExclamationTriangleIcon, HeartIcon } from "@heroicons/react/24/outline";
 
 export default function PrescriptionSuggestionPage() {
+  const { status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login");
+    }
+  }, [status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-gray-600 dark:text-gray-300 text-sm">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return null; // Redirect in progress
+  }
+
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     patient: {

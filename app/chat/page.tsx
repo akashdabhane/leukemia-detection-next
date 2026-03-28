@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { PaperAirplaneIcon, UserCircleIcon, CpuChipIcon } from "@heroicons/react/24/outline";
 
 type Message = {
@@ -9,6 +11,27 @@ type Message = {
 };
 
 export default function ChatPage() {
+  const { status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login");
+    }
+  }, [status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-gray-600 dark:text-gray-300 text-sm">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return null; // Redirect in progress
+  }
+
   const [messages, setMessages] = useState<Message[]>([
     { role: "bot", content: "Hello! I am your AI assistant. How can I help you today?" }
   ]);
