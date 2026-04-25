@@ -2,10 +2,9 @@ import { ChevronDownIcon, SparklesIcon } from "@heroicons/react/24/outline";
 
 export default function ModelSelector({ model, setModel }: any) {
   const models = [
-    { id: "EfficientNetB0", label: "EfficientNet B0" },
-    { id: "ResNet50", label: "ResNet 50 (Pro)" },
     { id: "MobileNetV2", label: "MobileNet V2" },
-    { id: "Gemini", label: "Gemini AI (Preview)", badge: "New" },
+    // { id: "EfficientNetB0", label: "EfficientNet B0" },
+    // { id: "ResNet50", label: "ResNet 50 (Pro)" },
   ];
 
   return (
@@ -23,7 +22,7 @@ export default function ModelSelector({ model, setModel }: any) {
         >
           {models.map((m) => (
             <option key={m.id} value={m.id}>
-              {m.label} {m.badge ? `[${m.badge}]` : ""}
+              {m.label}
             </option>
           ))}
         </select>
